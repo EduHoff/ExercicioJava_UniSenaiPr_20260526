@@ -1,5 +1,7 @@
 package exercises;
 
+import entities.ex1.*;
+import utils.ConsoleUtils;
 import java.util.Scanner;
 
 /* 
@@ -80,9 +82,131 @@ devem informar o tempo de duração e o narrador.
 
 public class Ex1 implements Exercise {
 
+    private Acervo acervo = new Acervo();
+
     @Override
     public void run(Scanner sc) {
-        System.out.println("--- Exercicío 1 ---");
+        int opcao = -1;
 
+        while (opcao != 0) {
+            System.out.print("""
+            ================================================
+                       GERENCIAMENTO DE ACERVO (EX 1)
+            ================================================
+            1 - Cadastrar Livro
+            2 - Remover Livro
+            3 - Listar Livros
+            0 - Voltar ao Menu Principal
+            ================================================
+            Escolha uma opção:\s""");
+            
+            try {
+                opcao = sc.nextInt();
+                sc.nextLine();
+                ConsoleUtils.clear();
+
+                switch (opcao) {
+                    case 1 -> cadastrarLivro(sc);
+                    case 2 -> removerLivro(sc);
+                    case 3 -> listarLivros();
+                    case 0 -> System.out.println("Retornando...\n");
+                    default -> System.out.println("Opção inválida!\n");
+                }
+            } catch (Exception e) {
+                System.out.println("Erro na entrada de dados. Tente novamente.\n");
+                sc.nextLine();
+            }
+        }
+    }
+
+    private void cadastrarLivro(Scanner sc) {
+        System.out.print("""
+        Selecione o tipo de livro:
+        1 - Livro Físico
+        2 - Ebook
+        3 - Audiobook
+        Escolha:\s""");
+        int tipo = sc.nextInt();
+        sc.nextLine();
+
+        System.out.print("Código Único: ");
+        String codigo = sc.nextLine();
+
+        if (acervo.idExiste(codigo)) {
+            System.out.println("\n[ERRO] Já existe um livro cadastrado com este código!\n");
+            return;
+        }
+
+        System.out.print("Título: ");
+        String titulo = sc.nextLine();
+        System.out.print("Autor: ");
+        String autor = sc.nextLine();
+
+        switch (tipo) {
+            case 1 -> {
+                System.out.print("Número de Páginas: ");
+                int paginas = sc.nextInt();
+                System.out.print("Número da Estante: ");
+                int estante = sc.nextInt();
+                sc.nextLine();
+                acervo.addLivro(new LivroFisico(codigo, titulo, autor, paginas, estante));
+                System.out.println("\nLivro Físico cadastrado com sucesso!\n");
+            }
+            case 2 -> {
+                System.out.print("Número de Páginas: ");
+                int paginas = sc.nextInt();
+                sc.nextLine();
+                System.out.print("Link de Download: ");
+                String link = sc.nextLine();
+                acervo.addLivro(new Ebook(codigo, titulo, autor, paginas, link));
+                System.out.println("\nEbook cadastrado com sucesso!\n");
+            }
+            case 3 -> {
+                System.out.print("Duração Total (em minutos): ");
+                double duracao = sc.nextDouble();
+                sc.nextLine();
+                System.out.print("Nome do Narrador: ");
+                String narrador = sc.nextLine();
+                acervo.addLivro(new Audiobook(codigo, titulo, autor, duracao, narrador));
+                System.out.println("\nAudiobook cadastrado com sucesso!\n");
+            }
+            default -> System.out.println("\n[ERRO] Tipo de livro inválido. Cadastro cancelado.\n");
+        }
+    }
+
+    private void removerLivro(Scanner sc) {
+        System.out.print("Digite o Código Único do livro que deseja remover: ");
+        String codigo = sc.nextLine();
+
+        if (acervo.removeLivro(codigo)) {
+            System.out.println("\nLivro removido com sucesso!\n");
+        } else {
+            System.out.println("\n[ERRO] Livro não encontrado com o código fornecido.\n");
+        }
+    }
+
+    private void listarLivros() {
+        if (acervo.getLivros().isEmpty()) {
+            System.out.println("Nenhum livro cadastrado no acervo.\n");
+            return;
+        }
+
+        System.out.println("================================================");
+        System.out.println("               LIVROS CADASTRADOS               ");
+        System.out.println("================================================");
+        
+        for (Livro l : acervo.getLivros()) {
+            System.out.printf("ID: %s | Título: %s | Autor: %s\n", l.getCodigo_unico(), l.getTitulo(), l.getAutor());
+            
+            if (l instanceof LivroFisico fisico) {
+                System.out.printf("   [Físico] Páginas: %d | Estante: %d\n", fisico.getNum_paginas(), fisico.getNum_estante());
+            } else if (l instanceof Ebook ebook) {
+                System.out.printf("   [Ebook] Páginas: %d | Download: %s\n", ebook.getNum_paginas(), ebook.getLink_download());
+            } else if (l instanceof Audiobook audio) {
+                System.out.printf("   [Audiobook] Duração: %.1f min | Narrador: %s\n", audio.getDuracao_total_audio_min(), audio.getNome_narrador());
+            }
+            System.out.println("------------------------------------------------");
+        }
+        System.out.println();
     }
 }
