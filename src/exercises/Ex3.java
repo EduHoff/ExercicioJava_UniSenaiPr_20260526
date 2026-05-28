@@ -1,5 +1,9 @@
 package exercises;
 
+import entities.ex1.*;
+import entities.ex2.*;
+import entities.ex3.*;
+import utils.ConsoleUtils;
 import java.util.Scanner;
 
 /* 
@@ -103,9 +107,161 @@ usuário (3 livros simultâneos).
 
 public class Ex3 implements Exercise {
 
+    private Acervo acervo = new Acervo();
+    private CadastroUsuarios cadastro = new CadastroUsuarios();
+    private ControleEmprestimos controle = new ControleEmprestimos();
+
+    public Ex3() {
+        acervo.addLivro(new LivroFisico("101", "Clean Code", "Robert C. Martin", 464, 3));
+        acervo.addLivro(new LivroFisico("102", "Rust in Action", "Tim McNamara", 450, 5));
+        acervo.addLivro(new Ebook("201", "Digital Book", "Author X", 120, "http://download.com"));
+        
+        cadastro.addUsuario(new Aluno("A1", "Eduardo Silva", 20, "Engenharia de Software", "202511"));
+        cadastro.addUsuario(new Professor("P1", "Gerson Santos", "Compiladores", "TI", "gerson@unisenai.edu"));
+    }
+
     @Override
     public void run(Scanner sc) {
-        System.out.println("--- Exercicío 3 ---");
+        int opcao = -1;
 
+        while (opcao != 0) {
+            System.out.print("""
+            ================================================
+                    SISTEMA DE EMPRÉSTIMOS (EX 3)
+            ================================================
+            1 - Realizar Empréstimo
+            2 - Registrar Devolução
+            3 - Listar Empréstimos Ativos
+            4 - Consultar Histórico de Usuário
+            0 - Voltar ao Menu Principal
+            ================================================
+            Escolha uma opção:\s""");
+
+            try {
+                opcao = sc.nextInt();
+                sc.nextLine();
+                ConsoleUtils.clear();
+
+                switch (opcao) {
+                    case 1 -> efetuarEmprestimo(sc);
+                    case 2 -> efetuarDevolucao(sc);
+                    case 3 -> listarAtivos();
+                    case 4 -> consultarHistorico(sc);
+                    case 0 -> System.out.println("Retornando...\n");
+                    default -> System.out.println("Opção inválida!\n");
+                }
+            } catch (Exception e) {
+                System.out.println("Erro na entrada de dados. Tente novamente.\n");
+                sc.nextLine();
+            }
+        }
+    }
+
+    private void efetuarEmprestimo(Scanner sc) {
+        System.out.print("Digite o código único do Usuário: ");
+        String codUsuario = sc.nextLine();
+
+        Usuario usuario = null;
+        for (Usuario u : cadastro.getUsuarios()) {
+            if (u.getCodigo_unico().equals(codUsuario)) {
+                usuario = u;
+                break;
+            }
+        }
+        if (usuario == null) {
+            System.out.println("\n[ERRO] Usuário não encontrado no sistema!\n");
+            return;
+        }
+
+        if (controle.usuarioTemAtraso(codUsuario)) {
+            System.out.println("\n[ERRO] Empréstimo Negado! O usuário possui pendências por atraso.\n");
+            return;
+        }
+
+        if (controle.contarLivrosAtivosUsuario(codUsuario) >= 3) {
+            System.out.println("\n[ERRO] Empréstimo Negado! Usuário já atingiu o limite de 3 livros simultâneos.\n");
+            return;
+        }
+
+        System.out.print("Digite o código único do Livro Físico: ");
+        String codLivro = sc.nextLine();
+
+        Livro livroAlvo = null;
+        for (Livro l : acervo.getLivros()) {
+            if (l.getCodigo_unico().equals(codLivro)) {
+                livroAlvo = l;
+                break;
+            }
+        }
+        if (livroAlvo == null) {
+            System.out.println("\n[ERRO] Livro não encontrado no acervo!\n");
+            return;
+        }
+        if (!(livroAlvo instanceof LivroFisico)) {
+            System.out.println("\n[ERRO] Apenas livros FÍSICOS podem ser pegos por empréstimo!\n");
+            return;
+        }
+
+        if (controle.livroEstaEmprestado(codLivro)) {
+            System.out.println("\n[ERRO] Este livro já está emprestado para outra pessoa no momento.\n");
+            return;
+        }
+
+        controle.registrarEmprestimo((LivroFisico) livroAlvo, usuario);
+        System.out.println("\nEmpréstimo realizado com sucesso!");
+        System.out.printf("Prazo de devolução: %d dias.\n\n", (usuario instanceof Aluno) ? 7 : 15);
+    }
+
+    private void efetuarDevolucao(Scanner sc) {
+        System.out.print("Digite o código único do livro sendo devolvido: ");
+        String codLivro = sc.nextLine();
+
+        if (controle.registrarDevolucao(codLivro)) {
+            System.out.println("\nDevolução registrada com sucesso!\n");
+        } else {
+            System.out.println("\n[ERRO] Não foi encontrado nenhum empréstimo ativo para o código de livro informado.\n");
+        }
+    }
+
+    private void listarAtivos() {
+        System.out.println("================================================");
+        System.out.println("               EMPRÉSTIMOS ATIVOS               ");
+        System.out.println("================================================");
+
+        boolean temAtivo = false;
+        for (Emprestimo e : controle.getEmprestimos()) {
+            if (e.isAtivo()) {
+                System.out.printf("Livro: [%s] %s\n", e.getCodigo_livro(), e.getTitulo_livro());
+                System.out.printf("Retirado por: %s\n", e.getNome_usuario());
+                System.out.printf("Data Empréstimo: %s | Entrega Prevista: %s\n", e.getDataEmprestimoFormatada(), e.getDataPrevistaFormatada());
+                System.out.printf("Status: %s\n", e.getStatusFormatado());
+                System.out.println("------------------------------------------------");
+                temAtivo = true;
+            }
+        }
+        if (!temAtivo) System.out.println("Nenhum empréstimo ativo no momento.\n------------------------------------------------");
+        System.out.println();
+    }
+
+    private void consultarHistorico(Scanner sc) {
+        System.out.print("Digite o código do usuário para consultar o histórico: ");
+        String codUsuario = sc.nextLine();
+
+        System.out.println("================================================");
+        System.out.println("             HISTÓRICO DE EMPRÉSTIMOS           ");
+        System.out.println("================================================");
+
+        boolean encontrouOp = false;
+        for (Emprestimo e : controle.getEmprestimos()) {
+            if (e.getCodigo_usuario().equals(codUsuario)) {
+                System.out.printf("Livro: %s (ID: %s)\n", e.getTitulo_livro(), e.getCodigo_livro());
+                System.out.printf("Data Retirada: %s | Data Prevista: %s\n", e.getDataEmprestimoFormatada(), e.getDataPrevistaFormatada());
+                System.out.printf("Situação do Registro: %s\n", e.getStatusFormatado());
+                System.out.println("------------------------------------------------");
+                encontrouOp = true;
+            }
+        }
+        if (!encontrouOp) System.out.println("Nenhum registro encontrado para este usuário.\n------------------------------------------------");
+        System.out.println();
     }
 }

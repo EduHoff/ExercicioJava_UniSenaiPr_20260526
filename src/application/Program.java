@@ -24,7 +24,7 @@ public class Program {
                 ================================================
                 1 - GERENCIAMENTO DE ACERVO
                 2 - CADASTRO DE USUÁRIOS
-                3 - Exercício
+                3 - SISTEMA DE EMPRÉSTIMOS
                 0 - Sair
                 ================================================
                 """);
