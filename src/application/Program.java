@@ -22,8 +22,8 @@ public class Program {
                 ================================================
                                 MENU DE EXERCÍCIOS
                 ================================================
-                1 - Exercício
-                2 - Exercício
+                1 - GERENCIAMENTO DE ACERVO
+                2 - CADASTRO DE USUÁRIOS
                 3 - Exercício
                 0 - Sair
                 ================================================
